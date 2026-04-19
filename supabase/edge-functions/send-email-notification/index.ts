@@ -1,7 +1,8 @@
 // Supabase Edge Function placeholder.
 // Conecta aquí Resend, SendGrid o SMTP transaccional.
 
-Deno.serve(async (req) => {
+
+Deno.serve(async (req: Request) => {
   const payload = await req.json().catch(() => ({}));
 
   return new Response(

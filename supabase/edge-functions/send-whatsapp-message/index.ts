@@ -1,7 +1,13 @@
 // Supabase Edge Function placeholder.
 // Conecta aquí WhatsApp Cloud API.
 
-Deno.serve(async (req) => {
+declare const Deno: {
+  serve: (
+    handler: (req: Request) => Response | Promise<Response>
+  ) => void;
+};
+
+Deno.serve(async (req: Request) => {
   const payload = await req.json().catch(() => ({}));
 
   return new Response(
