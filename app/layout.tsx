@@ -38,7 +38,7 @@ export default async function RootLayout({
           <div className="flex min-h-screen bg-slate-950">
             <Sidebar role={profile?.role} />
 
-            <main className="min-w-0 flex-1 overflow-x-hidden">
+            <main className="min-w-0 flex-1 overflow-x-hidden pt-16 lg:pt-0">
               {children}
             </main>
           </div>
