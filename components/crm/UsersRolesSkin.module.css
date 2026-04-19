@@ -1,0 +1,189 @@
+.wrapper {
+    min-height: 100vh;
+    padding: 28px;
+    color: #e5e7eb;
+    background:
+      radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), transparent 35%),
+      radial-gradient(circle at top right, rgba(168, 85, 247, 0.22), transparent 35%),
+      linear-gradient(135deg, #020617 0%, #0f172a 48%, #111827 100%);
+  }
+  
+  .usersTheme {
+    background:
+      radial-gradient(circle at top left, rgba(34, 197, 94, 0.22), transparent 35%),
+      radial-gradient(circle at top right, rgba(59, 130, 246, 0.22), transparent 35%),
+      linear-gradient(135deg, #020617 0%, #082f49 48%, #0f172a 100%);
+  }
+  
+  .rolesTheme {
+    background:
+      radial-gradient(circle at top left, rgba(168, 85, 247, 0.25), transparent 35%),
+      radial-gradient(circle at top right, rgba(244, 114, 182, 0.18), transparent 35%),
+      linear-gradient(135deg, #020617 0%, #312e81 48%, #111827 100%);
+  }
+  
+  .header {
+    margin-bottom: 24px;
+    padding: 28px;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(15, 23, 42, 0.72);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(18px);
+  }
+  
+  .kicker {
+    margin: 0 0 10px;
+    color: #93c5fd;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  
+  .title {
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(30px, 4vw, 48px);
+    font-weight: 950;
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+  
+  .description {
+    max-width: 760px;
+    margin-top: 12px;
+    color: #cbd5e1;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  
+  .content {
+    overflow: hidden;
+    padding: 18px;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(15, 23, 42, 0.84);
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px);
+  }
+  
+  /* Mata el blanco sobre blanco dentro del módulo */
+  .content :global(*) {
+    border-color: rgba(148, 163, 184, 0.24) !important;
+  }
+  
+  .content :global(h1),
+  .content :global(h2),
+  .content :global(h3),
+  .content :global(h4),
+  .content :global(label),
+  .content :global(p),
+  .content :global(span),
+  .content :global(th),
+  .content :global(td) {
+    color: #e5e7eb !important;
+  }
+  
+  /* Si algún componente trae bg-white de Tailwind */
+  .content :global(.bg-white),
+  .content :global([class*="bg-white"]) {
+    background: rgba(15, 23, 42, 0.9) !important;
+  }
+  
+  /* Si algún componente trae texto blanco sobre fondo blanco */
+  .content :global(.text-white) {
+    color: #f8fafc !important;
+  }
+  
+  .content :global(.text-black),
+  .content :global(.text-slate-900),
+  .content :global(.text-gray-900),
+  .content :global(.text-zinc-900) {
+    color: #e5e7eb !important;
+  }
+  
+  /* Inputs, selects y textarea */
+  .content :global(input),
+  .content :global(select),
+  .content :global(textarea) {
+    width: 100%;
+    color: #f8fafc !important;
+    background: rgba(2, 6, 23, 0.88) !important;
+    border: 1px solid rgba(148, 163, 184, 0.35) !important;
+    border-radius: 16px !important;
+    padding: 11px 14px !important;
+    outline: none !important;
+  }
+  
+  .content :global(input::placeholder),
+  .content :global(textarea::placeholder) {
+    color: #94a3b8 !important;
+  }
+  
+  .content :global(input:focus),
+  .content :global(select:focus),
+  .content :global(textarea:focus) {
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18) !important;
+  }
+  
+  /* Tablas */
+  .content :global(table) {
+    width: 100%;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+    background: transparent !important;
+  }
+  
+  .content :global(thead) {
+    background: transparent !important;
+  }
+  
+  .content :global(th) {
+    padding: 14px 16px !important;
+    color: #93c5fd !important;
+    background: rgba(30, 41, 59, 0.95) !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: uppercase !important;
+  }
+  
+  .content :global(td) {
+    padding: 16px !important;
+    color: #e5e7eb !important;
+    background: rgba(2, 6, 23, 0.58) !important;
+  }
+  
+  .content :global(tr:hover td) {
+    background: rgba(37, 99, 235, 0.22) !important;
+  }
+  
+  /* Botones */
+  .content :global(button) {
+    color: #ffffff !important;
+    border-radius: 16px !important;
+    font-weight: 900 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    background: linear-gradient(135deg, #2563eb, #7c3aed) !important;
+    box-shadow: 0 10px 28px rgba(37, 99, 235, 0.22) !important;
+  }
+  
+  .content :global(button:hover) {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+  }
+  
+  /* Cards internas */
+  .content :global(.card),
+  .content :global([class*="card"]),
+  .content :global([class*="rounded"]) {
+    background-color: rgba(15, 23, 42, 0.76) !important;
+  }
+  
+  /* Select options */
+  .content :global(option) {
+    color: #0f172a !important;
+    background: #ffffff !important;
+  }
