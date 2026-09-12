@@ -2,9 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   CRM ULTRA PREMIUM UI
+   Radical Visual System
+   ============================================================ */
+
 :root {
   color-scheme: dark;
+
+  --bg-0: #030712;
+  --bg-1: #07111f;
+  --bg-2: #0b1220;
+  --bg-3: #111827;
+
+  --panel: rgba(15, 23, 42, 0.72);
+  --panel-soft: rgba(255, 255, 255, 0.045);
+  --panel-hover: rgba(255, 255, 255, 0.075);
+
+  --border: rgba(148, 163, 184, 0.14);
+  --border-strong: rgba(99, 102, 241, 0.30);
+
+  --text: #f8fafc;
+  --muted: #94a3b8;
+
+  --primary: #6366f1;
+  --primary-2: #8b5cf6;
+  --cyan: #22d3ee;
+  --emerald: #34d399;
+  --amber: #fbbf24;
+  --danger: #fb7185;
+
+  --shadow-xl:
+    0 30px 70px rgba(0, 0, 0, 0.40),
+    0 8px 25px rgba(0, 0, 0, 0.26);
+
+  --shadow-glow:
+    0 0 0 1px rgba(99, 102, 241, 0.12),
+    0 0 42px rgba(99, 102, 241, 0.13);
+
+  --radius-xl: 24px;
+  --radius-2xl: 30px;
 }
+
+/* ============================================================
+   RESET
+   ============================================================ */
 
 * {
   box-sizing: border-box;
@@ -12,43 +54,799 @@
 
 html {
   scroll-behavior: smooth;
+  background: var(--bg-0);
 }
 
 body {
-  @apply min-h-screen bg-slate-950 text-slate-100 antialiased;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text);
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
   background:
-    radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 32rem),
-    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28rem),
-    linear-gradient(135deg, #020617 0%, #0f172a 52%, #020617 100%);
+    radial-gradient(
+      circle at 8% 8%,
+      rgba(99, 102, 241, 0.22),
+      transparent 31rem
+    ),
+    radial-gradient(
+      circle at 92% 4%,
+      rgba(34, 211, 238, 0.14),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 70% 82%,
+      rgba(139, 92, 246, 0.12),
+      transparent 32rem
+    ),
+    linear-gradient(
+      135deg,
+      #020617 0%,
+      #07101d 38%,
+      #0a1020 70%,
+      #020617 100%
+    );
+
+  background-attachment: fixed;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+
+  overflow-x: hidden;
 }
 
-::selection {
-  @apply bg-indigo-500/40 text-white;
+/* ============================================================
+   AURORA BACKGROUND
+   ============================================================ */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 30% 20%,
+      rgba(79, 70, 229, 0.11),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 80% 25%,
+      rgba(14, 165, 233, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 60% 90%,
+      rgba(168, 85, 247, 0.08),
+      transparent 28%
+    );
+
+  animation: crmAurora 18s ease-in-out infinite alternate;
 }
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  opacity: 0.18;
+
+  background-image:
+    linear-gradient(
+      rgba(255,255,255,0.018) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,0.018) 1px,
+      transparent 1px
+    );
+
+  background-size: 38px 38px;
+
+  mask-image:
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,.9),
+      rgba(0,0,0,.35)
+    );
+}
+
+@keyframes crmAurora {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+    filter: hue-rotate(0deg);
+  }
+
+  100% {
+    transform: scale(1.08) translate3d(1.5%, -1%, 0);
+    filter: hue-rotate(14deg);
+  }
+}
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+
+::selection {
+  background: rgba(99, 102, 241, 0.45);
+  color: white;
+}
+
+/* ============================================================
+   HEADINGS
+   ============================================================ */
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.025em;
+}
+
+h1 {
+  text-shadow:
+    0 0 22px rgba(129, 140, 248, 0.08);
+}
+
+/* ============================================================
+   LINKS
+   ============================================================ */
+
+a {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
 
 input,
 select,
 textarea {
-  @apply w-full rounded-2xl border border-slate-700/70 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500;
-  @apply focus:border-indigo-400 focus:bg-slate-950 focus:ring-4 focus:ring-indigo-500/10;
+  width: 100%;
+
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.88),
+      rgba(2, 6, 23, 0.82)
+    );
+
+  color: #f8fafc;
+
+  padding: 0.82rem 1rem;
+
+  font-size: 0.875rem;
+  font-weight: 550;
+
+  outline: none;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 6px 18px rgba(0,0,0,.08);
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(129, 140, 248, 0.28);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(129, 140, 248, 0.70);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.98),
+      rgba(2, 6, 23, 0.94)
+    );
+
+  box-shadow:
+    0 0 0 4px rgba(99, 102, 241, 0.10),
+    0 0 28px rgba(99, 102, 241, 0.08),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b;
 }
 
 textarea {
-  @apply resize-none;
+  resize: vertical;
+  min-height: 120px;
 }
 
 label {
-  @apply mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-slate-400;
+  display: block;
+  margin-bottom: 0.55rem;
+
+  color: #94a3b8;
+
+  font-size: 0.70rem;
+  font-weight: 800;
+
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
 }
 
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
 button {
-  @apply transition;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+
+  user-select: none;
 }
+
+button:active {
+  transform: scale(0.975);
+}
+
+.crm-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+
+  min-height: 44px;
+
+  padding: 0.72rem 1.15rem;
+
+  border-radius: 16px;
+  border: 1px solid rgba(165, 180, 252, 0.20);
+
+  color: white;
+
+  font-size: 0.84rem;
+  font-weight: 900;
+
+  background:
+    linear-gradient(
+      135deg,
+      #4f46e5 0%,
+      #6366f1 30%,
+      #7c3aed 65%,
+      #0ea5e9 100%
+    );
+
+  box-shadow:
+    0 12px 30px rgba(79, 70, 229, 0.24),
+    inset 0 1px 0 rgba(255,255,255,0.20);
+
+  position: relative;
+  overflow: hidden;
+}
+
+.crm-button-primary::before {
+  content: "";
+  position: absolute;
+
+  top: -80%;
+  left: -30%;
+
+  width: 35%;
+  height: 260%;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,.26),
+      transparent
+    );
+
+  transform: rotate(18deg);
+
+  transition: left 500ms ease;
+}
+
+.crm-button-primary:hover::before {
+  left: 115%;
+}
+
+.crm-button-primary:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 18px 40px rgba(79, 70, 229, 0.30),
+    0 0 25px rgba(56, 189, 248, 0.08),
+    inset 0 1px 0 rgba(255,255,255,.24);
+}
+
+.crm-button-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.crm-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  padding: 0.72rem 1rem;
+
+  border-radius: 16px;
+
+  border:
+    1px solid rgba(148, 163, 184, 0.15);
+
+  color: #e2e8f0;
+
+  font-size: 0.84rem;
+  font-weight: 800;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.065),
+      rgba(255,255,255,.025)
+    );
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.crm-button-secondary:hover {
+  transform: translateY(-1px);
+
+  border-color: rgba(129, 140, 248, 0.30);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(129,140,248,.10),
+      rgba(255,255,255,.035)
+    );
+
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.18);
+}
+
+.crm-button-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+
+  border-radius: 14px;
+
+  border:
+    1px solid rgba(251, 113, 133, 0.22);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(244,63,94,.15),
+      rgba(127,29,29,.08)
+    );
+
+  padding: 0.58rem 0.85rem;
+
+  color: #fecdd3;
+
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.crm-button-danger:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(244,63,94,.25),
+      rgba(127,29,29,.14)
+    );
+
+  box-shadow:
+    0 10px 28px rgba(225,29,72,.16);
+}
+
+/* ============================================================
+   PREMIUM CARDS
+   ============================================================ */
+
+.crm-card {
+  position: relative;
+  overflow: hidden;
+
+  border-radius: var(--radius-xl);
+
+  border:
+    1px solid rgba(148, 163, 184, 0.11);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(15, 23, 42, 0.80),
+      rgba(15, 23, 42, 0.47)
+    );
+
+  backdrop-filter:
+    blur(22px)
+    saturate(130%);
+
+  -webkit-backdrop-filter:
+    blur(22px)
+    saturate(130%);
+
+  box-shadow:
+    var(--shadow-xl),
+    inset 0 1px 0 rgba(255,255,255,.035);
+
+  transition:
+    transform 230ms ease,
+    border-color 230ms ease,
+    box-shadow 230ms ease,
+    background 230ms ease;
+}
+
+.crm-card::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      rgba(129, 140, 248, 0.10),
+      transparent 30%
+    );
+}
+
+.crm-card:hover {
+  transform: translateY(-4px);
+
+  border-color:
+    rgba(129, 140, 248, 0.22);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(20, 30, 53, 0.88),
+      rgba(15, 23, 42, 0.60)
+    );
+
+  box-shadow:
+    0 36px 80px rgba(0,0,0,.43),
+    0 0 0 1px rgba(99,102,241,.07),
+    0 0 40px rgba(99,102,241,.08);
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
 
 table {
   border-collapse: separate;
   border-spacing: 0;
+  width: 100%;
 }
+
+thead {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.04),
+      rgba(255,255,255,.015)
+    );
+}
+
+thead th {
+  color: #94a3b8;
+
+  font-size: 0.67rem;
+  font-weight: 900;
+
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+tbody tr {
+  transition:
+    background 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+tbody tr:hover {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(99,102,241,.06),
+      rgba(14,165,233,.025),
+      transparent
+    );
+}
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+
+.crm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  border-radius: 999px;
+
+  padding: 0.38rem 0.72rem;
+
+  font-size: 0.67rem;
+  font-weight: 900;
+
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  backdrop-filter: blur(8px);
+}
+
+/* ============================================================
+   STAT / KPI CARDS
+   ============================================================ */
+
+.crm-stat {
+  position: relative;
+
+  border-radius: 24px;
+
+  border:
+    1px solid rgba(148,163,184,.11);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(15,23,42,.75),
+      rgba(255,255,255,.022)
+    );
+
+  padding: 1.25rem;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 18px 48px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.035);
+
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.crm-stat::after {
+  content: "";
+
+  position: absolute;
+
+  width: 110px;
+  height: 110px;
+
+  right: -35px;
+  top: -35px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(99,102,241,.22),
+      transparent 68%
+    );
+
+  filter: blur(4px);
+}
+
+.crm-stat:hover {
+  transform:
+    translateY(-4px)
+    scale(1.01);
+
+  border-color:
+    rgba(129,140,248,.22);
+
+  box-shadow:
+    0 26px 60px rgba(0,0,0,.32),
+    0 0 34px rgba(99,102,241,.07);
+}
+
+/* ============================================================
+   HERO PANEL
+   ============================================================ */
+
+.crm-hero {
+  position: relative;
+  overflow: hidden;
+
+  border-radius: 30px;
+
+  border:
+    1px solid rgba(129,140,248,.16);
+
+  background:
+    radial-gradient(
+      circle at 0% 0%,
+      rgba(99,102,241,.20),
+      transparent 36%
+    ),
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(14,165,233,.13),
+      transparent 30%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(15,23,42,.92),
+      rgba(2,6,23,.70)
+    );
+
+  box-shadow:
+    0 30px 80px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* ============================================================
+   PREMIUM TITLE
+   ============================================================ */
+
+.crm-gradient-title {
+  background:
+    linear-gradient(
+      90deg,
+      #ffffff 0%,
+      #c7d2fe 35%,
+      #a5b4fc 55%,
+      #7dd3fc 85%,
+      #ffffff 100%
+    );
+
+  background-size: 220% auto;
+
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  color: transparent;
+
+  animation:
+    crmTitleFlow 7s linear infinite;
+}
+
+@keyframes crmTitleFlow {
+  to {
+    background-position: 220% center;
+  }
+}
+
+/* ============================================================
+   SIDEBAR EFFECTS
+   ============================================================ */
+
+aside {
+  backdrop-filter:
+    blur(25px)
+    saturate(140%);
+
+  -webkit-backdrop-filter:
+    blur(25px)
+    saturate(140%);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(2,6,23,.94),
+      rgba(7,13,29,.91)
+    ) !important;
+
+  border-right:
+    1px solid rgba(148,163,184,.10);
+}
+
+/* ============================================================
+   NAV LINKS
+   ============================================================ */
+
+aside a {
+  position: relative;
+}
+
+aside a:hover {
+  transform: translateX(3px);
+}
+
+/* ============================================================
+   STATUS DOT
+   ============================================================ */
+
+.crm-status-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 999px;
+
+  background: #34d399;
+
+  box-shadow:
+    0 0 0 4px rgba(52,211,153,.10),
+    0 0 14px rgba(52,211,153,.48);
+
+  animation:
+    crmPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes crmPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: .66;
+    transform: scale(.88);
+  }
+}
+
+/* ============================================================
+   DIVIDERS
+   ============================================================ */
+
+.crm-divider {
+  height: 1px;
+
+  border: 0;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(148,163,184,.20),
+      transparent
+    );
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
 
 ::-webkit-scrollbar {
   width: 10px;
@@ -60,26 +858,143 @@ table {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
   border-radius: 999px;
+
+  border:
+    2px solid #020617;
+
+  background:
+    linear-gradient(
+      180deg,
+      #334155,
+      #475569
+    );
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background:
+    linear-gradient(
+      180deg,
+      #6366f1,
+      #0ea5e9
+    );
 }
 
-.crm-card {
-  @apply rounded-3xl border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/20 backdrop-blur-xl;
+/* ============================================================
+   LOADING SHIMMER
+   ============================================================ */
+
+.crm-shimmer {
+  position: relative;
+  overflow: hidden;
 }
 
-.crm-button-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-sky-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-indigo-950/30 hover:from-indigo-500 hover:to-sky-400 disabled:cursor-not-allowed disabled:opacity-50;
+.crm-shimmer::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  transform:
+    translateX(-100%);
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,.06),
+      transparent
+    );
+
+  animation:
+    crmShimmer 1.9s infinite;
 }
 
-.crm-button-secondary {
-  @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-slate-100 hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-50;
+@keyframes crmShimmer {
+  100% {
+    transform:
+      translateX(100%);
+  }
 }
 
-.crm-button-danger {
-  @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-black text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50;
+/* ============================================================
+   TOOLTIP-LIKE GLOW
+   ============================================================ */
+
+.crm-glow {
+  box-shadow:
+    var(--shadow-glow);
+}
+
+/* ============================================================
+   PAGE ANIMATION
+   ============================================================ */
+
+main {
+  animation:
+    crmPageEntrance 450ms
+    cubic-bezier(.22,.8,.28,1)
+    both;
+}
+
+@keyframes crmPageEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+
+:focus-visible {
+  outline:
+    2px solid rgba(129,140,248,.9);
+
+  outline-offset:
+    3px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  body {
+    background:
+      radial-gradient(
+        circle at top,
+        rgba(99,102,241,.16),
+        transparent 24rem
+      ),
+      #020617;
+  }
+
+  .crm-card,
+  .crm-stat,
+  .crm-hero {
+    border-radius: 20px;
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }
