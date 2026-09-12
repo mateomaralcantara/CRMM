@@ -1,3 +1,4 @@
+import { Reto111Dashboard } from "@/components/reto111-dashboard";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -664,6 +665,8 @@ export default async function DashboardPage() {
           </div>
         </section>
 
+        <Reto111Dashboard />
+
         {totalErrors > 0 && (
           <section className="rounded-[1.7rem] border border-amber-400/20 bg-amber-500/[0.07] p-5 shadow-xl shadow-black/10 backdrop-blur-xl">
             <div className="flex gap-3">
@@ -1080,3 +1083,4 @@ export default async function DashboardPage() {
     </main>
   );
 }
+

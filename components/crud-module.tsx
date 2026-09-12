@@ -64,7 +64,7 @@ type CrudModuleProps = {
   defaultValues?: Record<string, unknown>;
 };
 
-const ASSIGNABLE_TABLES = ["clients", "leads", "tasks", "tickets", "service_requests"];
+const ASSIGNABLE_TABLES = ["clients", "leads", "opportunities", "sales", "tasks", "tickets", "service_requests"];
 
 const RESPONSIBLE_COLUMNS = [
   "assigned_to",
@@ -82,6 +82,10 @@ const AFFILIATE_TYPE_COLUMNS = [
 ];
 
 const MONEY_COLUMNS = [
+  "opportunity_value",
+  "sold_amount",
+  "collected_amount",
+  "outstanding_balance",
   "amount",
   "base_price",
   "subtotal",
@@ -95,6 +99,8 @@ const MONEY_COLUMNS = [
 ];
 
 const BADGE_COLUMNS = [
+  "stage",
+  "business_unit",
   "status",
   "priority",
   "payment_status",
@@ -120,6 +126,15 @@ function formatColumnLabel(column: string) {
     whatsapp: "WhatsApp",
     email: "Correo",
     client_type: "Tipo",
+    business_unit: "Unidad de negocio",
+    stage: "Etapa",
+    opportunity_value: "Valor oportunidad",
+    sold_amount: "Vendido",
+    collected_amount: "Cobrado",
+    outstanding_balance: "Saldo pendiente",
+    conversion_probability: "Probabilidad %",
+    next_action: "Próxima acción",
+    next_action_at: "Fecha próxima acción",
     status: "Estado",
     assigned_to: "Responsable",
     responsible_id: "Responsable",
@@ -1311,3 +1326,4 @@ export function CrudModule({
     </div>
   );
 }
+

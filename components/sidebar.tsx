@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
+  CalendarDays,
+  Target,
   Users,
   UserPlus,
   Handshake,
@@ -41,6 +43,8 @@ type NavLink = {
 
 const links: NavLink[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/hoy", label: "HOY", icon: CalendarDays },
+  { href: "/oportunidades", label: "Oportunidades", icon: Target },
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/leads", label: "Leads", icon: UserPlus },
   { href: "/afiliados", label: "Afiliados", icon: Handshake },
@@ -205,7 +209,7 @@ export function Sidebar({ role }: SidebarProps) {
 
         <div className="mb-4 rounded-2xl border border-indigo-300/10 bg-indigo-500/10 px-3 py-2">
           <p className="truncate text-xs font-bold text-indigo-200">
-            Clientes · Afiliados · Comisiones
+            Reto 111 · Ventas · Cobros · Seguimiento
           </p>
         </div>
 
@@ -234,7 +238,7 @@ export function Sidebar({ role }: SidebarProps) {
 
           <div className="mt-4 rounded-2xl border border-indigo-300/10 bg-indigo-500/10 px-3 py-2">
             <p className="truncate text-xs font-bold text-indigo-200">
-              Clientes · Afiliados · Comisiones
+              Reto 111 · Ventas · Cobros · Seguimiento
             </p>
           </div>
         </div>

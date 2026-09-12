@@ -29,24 +29,20 @@ export default function Page() {
   return (
     <AppShell>
       <CrudModule
-        title="Leads — Motor comercial"
-        description="Captación, unidad de negocio, valor potencial, próxima acción y avance por el pipeline Reto 111."
-        table="leads"
-        columns={["name","business_unit","source","service_interest","opportunity_value","status","next_action","next_action_at","assigned_to","created_at"]}
+        title="Oportunidades — Pipeline Reto 111"
+        description="Control comercial desde el primer contacto hasta cobro, ejecución, cierre y upsell."
+        table="opportunities"
+        columns={["title","business_unit","stage","opportunity_value","sold_amount","collected_amount","outstanding_balance","conversion_probability","next_action","next_action_at","assigned_to"]}
         fields={[
-          { key: "name", label: "Nombre", required: true },
-          { key: "phone", label: "Teléfono" },
-          { key: "whatsapp", label: "WhatsApp" },
-          { key: "email", label: "Correo", type: "email" },
+          { key: "title", label: "Oportunidad", required: true },
           { key: "business_unit", label: "Unidad de negocio", type: "select", options: businessUnits, required: true },
-          { key: "source", label: "Fuente del lead", placeholder: "WhatsApp, YouTube, Instagram, referido, web..." },
-          { key: "service_interest", label: "Servicio de interés" },
+          { key: "source", label: "Fuente" },
+          { key: "stage", label: "Etapa", type: "select", options: stages, required: true },
           { key: "opportunity_value", label: "Valor de oportunidad", type: "number" },
-          { key: "interest_level", label: "Interés", type: "select", options: [
-            { label: "Bajo", value: "bajo" }, { label: "Medio", value: "medio" }, { label: "Alto", value: "alto" }
-          ]},
-          { key: "status", label: "Etapa del pipeline", type: "select", options: stages, required: true },
-          { key: "next_action", label: "Próxima acción", placeholder: "Llamar, enviar propuesta, cobrar, pedir documentos...", required: true },
+          { key: "sold_amount", label: "Vendido", type: "number" },
+          { key: "collected_amount", label: "Cobrado", type: "number" },
+          { key: "conversion_probability", label: "Probabilidad %", type: "number" },
+          { key: "next_action", label: "Próxima acción", required: true },
           { key: "next_action_at", label: "Fecha próxima acción", type: "datetime-local", required: true },
           { key: "assigned_to", label: "Responsable", type: "responsible-select", required: true },
           { key: "loss_reason", label: "Motivo de pérdida" },
