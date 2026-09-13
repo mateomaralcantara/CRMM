@@ -279,7 +279,7 @@ function getPriorityDot(row: CrmRow) {
 }
 
 async function loadModule(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<Awaited<ReturnType<typeof createClient>>>,
   module: (typeof modules)[number]
 ) {
   const base = {
@@ -410,7 +410,7 @@ function PipelineStep({
 }
 
 export default async function DashboardPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

@@ -348,7 +348,11 @@ export default function UsuariosPage() {
   );
 
   useEffect(() => {
-    loadEverything();
+    const timer = window.setTimeout(() => {
+      void loadEverything();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [loadEverything]);
 
   return (

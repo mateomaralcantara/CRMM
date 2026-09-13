@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 
@@ -37,8 +37,7 @@ export function PaymentModule() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -62,11 +61,15 @@ export function PaymentModule() {
     else setPayments((paymentsR.data || []) as Payment[]);
 
     setLoading(false);
-  }
+  }, [supabase]);
 
   useEffect(() => {
-    void load();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

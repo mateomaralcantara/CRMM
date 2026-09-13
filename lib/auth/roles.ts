@@ -11,7 +11,7 @@ export type UserRole =
   | "cliente";
 
 export async function getCurrentProfile() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user }

@@ -5,7 +5,7 @@ import { currency } from "@/lib/utils";
 import { BadgeDollarSign, Handshake, LifeBuoy, ShoppingCart, Users } from "lucide-react";
 
 async function countWhere(table: string, column?: string, value?: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   let query = supabase.from(table).select("*", { count: "exact", head: true });
 
   if (column && value) {
@@ -17,13 +17,13 @@ async function countWhere(table: string, column?: string, value?: string) {
 }
 
 async function sumSalesByStatus(status: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase.from("sales").select("amount").eq("status", status);
   return (data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
 }
 
 async function sumCommissionsByStatus(status: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase.from("commissions").select("amount").eq("status", status);
   return (data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
 }

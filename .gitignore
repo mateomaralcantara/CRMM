@@ -14,3 +14,11 @@ backup-reto111-*/
 .next/
 
 APLICAR-CRM-RETO111.ps1
+.env.*.local
+node_modules/
+backup-10-10-*/
+LLEVAR-CRM-A-10-DE-10.ps1
+fix-jsx-arrays.cjs
+backup-deploy-robusto-*/
+backup-deploy-final-*/
+backup-eslint-final-*/

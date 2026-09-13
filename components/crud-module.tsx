@@ -1095,7 +1095,11 @@ export function CrudModule({
   }, [loadRows, loadResponsibles, loadAffiliateTypes]);
 
   useEffect(() => {
-    refreshAll();
+    const timer = window.setTimeout(() => {
+      void refreshAll();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [refreshAll]);
 
   const filteredRows = useMemo(() => {

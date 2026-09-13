@@ -68,7 +68,7 @@ function Section({
 }
 
 export default async function TodayPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
@@ -87,6 +87,7 @@ export default async function TodayPage() {
   const payments = (paymentsR.data || []) as Row[];
   const quotes = (quotesR.data || []) as Row[];
   const requests = (requestsR.data || []) as Row[];
+  // Server Component: necesitamos la hora actual para calcular seguimientos vencidos.
   const now = Date.now();
 
   const pipeline = opps.length ? opps : leads;

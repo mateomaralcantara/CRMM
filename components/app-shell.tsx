@@ -7,7 +7,7 @@ import { Topbar } from "@/components/topbar";
 import { createClient } from "@/lib/supabase/server";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

@@ -92,7 +92,11 @@ export function Sidebar({ role }: SidebarProps) {
   });
 
   useEffect(() => {
-    setIsMobileOpen(false);
+    const timer = window.setTimeout(() => {
+      setIsMobileOpen(false);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   function renderNavLinks() {

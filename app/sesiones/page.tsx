@@ -63,7 +63,7 @@ function getBrowserLabel(userAgent?: string | null) {
 }
 
 export default async function SesionesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

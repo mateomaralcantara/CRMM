@@ -211,7 +211,7 @@ export default async function ActividadPage({ searchParams }: PageProps) {
   const selectedModule = params?.module || "todos";
   const selectedAction = params?.action || "todos";
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

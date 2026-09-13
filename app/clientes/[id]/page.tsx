@@ -5,14 +5,15 @@ import { notFound } from "next/navigation";
 export default async function ClienteDetallePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const supabase = createClient();
+  const { id } = await params;
+  const supabase = await createClient();
 
   const { data: client } = await supabase
     .from("clients_with_responsible")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (!client) {
@@ -22,25 +23,25 @@ export default async function ClienteDetallePage({
   const { data: documents } = await supabase
     .from("documents")
     .select("*")
-    .eq("client_id", params.id)
+    .eq("client_id", id)
     .order("created_at", { ascending: false });
 
   const { data: tickets } = await supabase
     .from("tickets")
     .select("*")
-    .eq("client_id", params.id)
+    .eq("client_id", id)
     .order("created_at", { ascending: false });
 
   const { data: serviceRequests } = await supabase
     .from("service_requests")
     .select("*")
-    .eq("client_id", params.id)
+    .eq("client_id", id)
     .order("created_at", { ascending: false });
 
   const { data: payments } = await supabase
     .from("payments")
     .select("*")
-    .eq("client_id", params.id)
+    .eq("client_id", id)
     .order("created_at", { ascending: false });
 
   return (

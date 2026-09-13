@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/roles";
 
 export default async function MiCuentaPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const profile = await getCurrentProfile();
 
   if (!profile) {

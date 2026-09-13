@@ -113,7 +113,7 @@ function Metric({
 }
 
 export async function Reto111Dashboard() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [leadsR, opportunitiesR, quotesR, salesR, paymentsR] = await Promise.all([
     supabase.from("leads").select("*").limit(1000),
