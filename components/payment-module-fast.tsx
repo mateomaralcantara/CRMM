@@ -157,15 +157,19 @@ export function PaymentModuleFast() {
     }
   }
 
-  async function remove(id: string) {
+  async function voidPayment(id: string) {
     if (!privileged) return;
-    if (!window.confirm("¿Anular este pago? La venta, el ledger y la comisión se recalcularán.")) return;
+    if (!window.confirm("¿Anular este pago? Se conservará el registro histórico y se recalcularán venta, ledger y comisión.")) return;
 
     setError(null);
     try {
-      const { error: deleteError } = await supabase.from("payments").delete().eq("id", id);
-      if (deleteError) {
-        setError(deleteError.message);
+      const { error: updateError } = await supabase
+        .from("payments")
+        .update({ status: "rechazado" })
+        .eq("id", id);
+
+      if (updateError) {
+        setError(updateError.message);
         return;
       }
       await load();
@@ -306,7 +310,7 @@ export function PaymentModuleFast() {
                       <td className="p-4">{payment.paid_at ? new Date(payment.paid_at).toLocaleString("es-DO") : "—"}</td>
                       {privileged ? (
                         <td className="p-4">
-                          <button type="button" onClick={() => void remove(payment.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-black text-red-200">
+                          <button type="button" onClick={() => void voidPayment(payment.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-black text-red-200">
                             <Trash2 size={14} />
                             Anular
                           </button>
