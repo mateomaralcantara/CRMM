@@ -1,48 +1,62 @@
 export type AppRole =
+  | "super_admin"
   | "admin"
   | "supervisor"
   | "vendedor"
   | "responsable"
   | "soporte"
   | "afiliado"
+  | "promotor"
   | "cliente";
 
+export function isPrivileged(role: AppRole) {
+  return role === "super_admin" || role === "admin";
+}
+
 export function canAccessDashboard(role: AppRole) {
-  return ["admin", "supervisor", "vendedor", "responsable", "soporte"].includes(role);
+  return Boolean(role);
 }
 
 export function canManageUsers(role: AppRole) {
-  return role === "admin";
+  return isPrivileged(role);
+}
+
+export function canManagePrivilegedUsers(role: AppRole) {
+  return role === "super_admin";
 }
 
 export function canManageCommissions(role: AppRole) {
-  return ["admin", "supervisor"].includes(role);
+  return isPrivileged(role);
 }
 
 export function canViewAffiliatePortal(role: AppRole) {
-  return role === "afiliado";
+  return role === "afiliado" || role === "promotor";
 }
 
 export function canViewClientPortal(role: AppRole) {
   return role === "cliente";
 }
 
+export function canRegisterPayments(role: AppRole) {
+  return ["super_admin", "admin", "supervisor", "responsable", "vendedor"].includes(role);
+}
+
 export function getDefaultRouteByRole(role: AppRole) {
   switch (role) {
+    case "super_admin":
     case "admin":
-      return "/dashboard";
+      return "/";
     case "supervisor":
-      return "/dashboard";
     case "vendedor":
-      return "/leads";
     case "responsable":
-      return "/solicitudes";
+      return "/hoy";
     case "soporte":
       return "/tickets";
     case "afiliado":
-      return "/portal-afiliado";
+    case "promotor":
+      return "/finanzas";
     case "cliente":
-      return "/portal-cliente";
+      return "/solicitudes";
     default:
       return "/login";
   }

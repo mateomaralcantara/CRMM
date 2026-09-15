@@ -8,7 +8,11 @@ type Sale = {
   id: string;
   title: string | null;
   amount: number | null;
-  business_unit?: string | null;
+  collected_amount: number | null;
+  outstanding_balance: number | null;
+  business_unit: string | null;
+  affiliate_id: string | null;
+  responsible_id: string | null;
 };
 
 type Payment = {
@@ -20,6 +24,9 @@ type Payment = {
   proof_url: string | null;
   paid_at: string | null;
   created_at: string | null;
+  affiliate_id: string | null;
+  responsible_id: string | null;
+  business_unit: string | null;
 };
 
 function money(value: unknown) {
@@ -42,28 +49,37 @@ export function PaymentModuleFast() {
   const supabase = useMemo(() => createClient(), []);
   const [sales, setSales] = useState<Sale[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const privileged = ["super_admin", "admin"].includes(role);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const [salesR, paymentsR] = await Promise.all([
+      const userR = await supabase.auth.getUser();
+      const userId = userR.data.user?.id;
+
+      const [salesR, paymentsR, profileR] = await Promise.all([
         supabase
           .from("sales")
-          .select("id,title,amount,business_unit")
+          .select("id,title,amount,collected_amount,outstanding_balance,business_unit,affiliate_id,responsible_id")
           .order("created_at", { ascending: false })
           .limit(250)
           .abortSignal(AbortSignal.timeout(12000)),
         supabase
           .from("payments")
-          .select("id,sale_id,amount,method,status,proof_url,paid_at,created_at")
+          .select("id,sale_id,amount,method,status,proof_url,paid_at,created_at,affiliate_id,responsible_id,business_unit")
           .order("created_at", { ascending: false })
           .limit(250)
           .abortSignal(AbortSignal.timeout(12000)),
+        userId
+          ? supabase.from("profiles").select("role").eq("id", userId).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
       ]);
 
       if (salesR.error) setError(salesR.error.message);
@@ -71,6 +87,8 @@ export function PaymentModuleFast() {
 
       if (paymentsR.error) setError(paymentsR.error.message);
       else setPayments((paymentsR.data || []) as Payment[]);
+
+      if (profileR.data?.role) setRole(String(profileR.data.role).toLowerCase());
     } catch (cause) {
       setError(friendlyError(cause));
     } finally {
@@ -79,9 +97,7 @@ export function PaymentModuleFast() {
   }, [supabase]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void load();
-    }, 0);
+    const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
 
@@ -100,8 +116,25 @@ export function PaymentModuleFast() {
       const proofUrl = String(form.get("proof_url") || "");
       const notes = String(form.get("notes") || "");
 
+      if (amount <= 0) {
+        setError("El monto del cobro debe ser mayor que cero.");
+        return;
+      }
+
+      const sale = sales.find((item) => item.id === saleId);
+      if (!sale) {
+        setError("Selecciona una venta visible para tu cuenta.");
+        return;
+      }
+
+      const outstanding = Number(sale.outstanding_balance ?? sale.amount ?? 0);
+      if (outstanding > 0 && amount > outstanding && !privileged) {
+        setError(`El cobro supera el saldo pendiente (${money(outstanding)}).`);
+        return;
+      }
+
       const { error: insertError } = await supabase.from("payments").insert({
-        sale_id: saleId || null,
+        sale_id: saleId,
         amount,
         method: method || null,
         status,
@@ -124,32 +157,43 @@ export function PaymentModuleFast() {
     }
   }
 
-  async function remove(id: string) {
-    if (!window.confirm("¿Eliminar este pago? El saldo de la venta se recalculará automáticamente.")) return;
+  async function voidPayment(id: string) {
+    if (!privileged) return;
+    if (!window.confirm("¿Anular este pago? Se conservará el registro histórico y se recalcularán venta, ledger y comisión.")) return;
 
     setError(null);
     try {
-      const { error: deleteError } = await supabase.from("payments").delete().eq("id", id);
-      if (deleteError) {
-        setError(deleteError.message);
+      const { error: updateError } = await supabase
+        .from("payments")
+        .update({ status: "rechazado" })
+        .eq("id", id);
+
+      if (updateError) {
+        setError(updateError.message);
         return;
       }
-      setPayments((current) => current.filter((payment) => payment.id !== id));
+      await load();
     } catch (cause) {
       setError(friendlyError(cause));
     }
   }
 
   const saleMap = new Map(sales.map((sale) => [sale.id, sale]));
+  const realCollected = payments
+    .filter((payment) => ["parcial", "completado"].includes(String(payment.status)))
+    .reduce((total, payment) => total + Number(payment.amount || 0), 0);
 
   return (
     <div className="space-y-6">
       <section className="crm-hero p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">Caja</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">Caja real</p>
             <h1 className="mt-2 text-3xl font-black text-white">Pagos y cobros</h1>
-            <p className="mt-2 text-sm text-slate-400">Carga acotada, timeout de red y recuperación sin dejar la pantalla bloqueada.</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+              Cada cobro se atribuye automáticamente a la venta, cliente, responsable, afiliado y unidad de negocio existentes al momento del pago. Esa atribución queda congelada para la historia financiera.
+            </p>
+            <p className="mt-4 text-2xl font-black text-emerald-200">Visible cobrado: {money(realCollected)}</p>
           </div>
           <button type="button" onClick={() => void load()} className="crm-button-secondary" disabled={loading}>
             {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
@@ -159,13 +203,13 @@ export function PaymentModuleFast() {
       </section>
 
       {error ? (
-        <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-100">
-          {error}
-        </div>
+        <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-100">{error}</div>
       ) : null}
 
       <section className="crm-card p-6">
-        <h2 className="text-xl font-black text-white">Registrar cobro</h2>
+        <h2 className="text-xl font-black text-white">Registrar ingreso</h2>
+        <p className="mt-2 text-sm text-slate-500">Solo aparecen ventas que RLS permite ver a tu usuario.</p>
+
         <form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div>
             <label>Venta *</label>
@@ -173,14 +217,14 @@ export function PaymentModuleFast() {
               <option value="" disabled>Seleccionar venta</option>
               {sales.map((sale) => (
                 <option key={sale.id} value={sale.id}>
-                  {sale.title || "Venta"} · {money(sale.amount)}
+                  {sale.title || "Venta"} · vendido {money(sale.amount)} · pendiente {money(sale.outstanding_balance)}
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label>Monto *</label>
-            <input name="amount" type="number" step="0.01" min="0" required />
+            <input name="amount" type="number" step="0.01" min="0.01" required />
           </div>
           <div>
             <label>Método</label>
@@ -197,9 +241,9 @@ export function PaymentModuleFast() {
           <div>
             <label>Estado</label>
             <select name="status" defaultValue="completado">
-              <option value="completado">Completado</option>
-              <option value="parcial">Parcial</option>
-              <option value="pendiente">Pendiente</option>
+              <option value="completado">Completado / contabilizar</option>
+              <option value="parcial">Parcial / contabilizar</option>
+              <option value="pendiente">Pendiente / no contabilizar</option>
               <option value="rechazado">Rechazado</option>
               <option value="vencido">Vencido</option>
             </select>
@@ -228,24 +272,27 @@ export function PaymentModuleFast() {
       <section className="crm-card overflow-hidden">
         <div className="border-b border-white/10 p-5">
           <h2 className="text-xl font-black text-white">Últimos pagos</h2>
-          <p className="mt-1 text-xs text-slate-500">Se muestran hasta 250 registros recientes.</p>
+          <p className="mt-1 text-xs text-slate-500">La atribución mostrada es la fotografía financiera del momento del cobro.</p>
         </div>
 
         {loading ? (
           <div className="p-8 text-center text-sm text-slate-500">Cargando pagos…</div>
         ) : payments.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">No hay pagos registrados.</div>
+          <div className="p-8 text-center text-sm text-slate-500">No hay pagos visibles para esta cuenta.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[1050px] text-left text-sm">
               <thead className="border-b border-white/10 text-xs uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="p-4">Venta</th>
+                  <th className="p-4">Unidad</th>
                   <th className="p-4">Monto</th>
                   <th className="p-4">Método</th>
                   <th className="p-4">Estado</th>
+                  <th className="p-4">Responsable</th>
+                  <th className="p-4">Afiliado</th>
                   <th className="p-4">Fecha</th>
-                  <th className="p-4">Acción</th>
+                  {privileged ? <th className="p-4">Acción</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -254,16 +301,21 @@ export function PaymentModuleFast() {
                   return (
                     <tr key={payment.id} className="border-b border-white/[0.06] text-slate-300">
                       <td className="p-4 font-semibold text-white">{sale?.title || "Venta"}</td>
-                      <td className="p-4">{money(payment.amount)}</td>
+                      <td className="p-4">{payment.business_unit || sale?.business_unit || "—"}</td>
+                      <td className="p-4 font-black text-emerald-200">{money(payment.amount)}</td>
                       <td className="p-4">{payment.method || "—"}</td>
                       <td className="p-4">{payment.status || "—"}</td>
+                      <td className="p-4 font-mono text-xs">{payment.responsible_id ? payment.responsible_id.slice(0, 8) : "—"}</td>
+                      <td className="p-4 font-mono text-xs">{payment.affiliate_id ? payment.affiliate_id.slice(0, 8) : "—"}</td>
                       <td className="p-4">{payment.paid_at ? new Date(payment.paid_at).toLocaleString("es-DO") : "—"}</td>
-                      <td className="p-4">
-                        <button type="button" onClick={() => void remove(payment.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-black text-red-200">
-                          <Trash2 size={14} />
-                          Eliminar
-                        </button>
-                      </td>
+                      {privileged ? (
+                        <td className="p-4">
+                          <button type="button" onClick={() => void voidPayment(payment.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-black text-red-200">
+                            <Trash2 size={14} />
+                            Anular
+                          </button>
+                        </td>
+                      ) : null}
                     </tr>
                   );
                 })}
