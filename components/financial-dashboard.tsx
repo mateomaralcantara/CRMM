@@ -40,8 +40,10 @@ type CommissionRow = {
   business_unit: string | null;
 };
 
-function sum(values: Array<number | null | undefined>) {
-  return values.reduce((total, value) => total + Number(value || 0), 0);
+function sum(values: Array<number | null | undefined>): number {
+  let total = 0;
+  for (const value of values) total += Number(value || 0);
+  return total;
 }
 
 function roleTitle(role: string) {
