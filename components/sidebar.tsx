@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
+  MessageCircle,
   CalendarDays,
   Target,
   Users,
@@ -43,6 +44,7 @@ type NavLink = {
 
 const links: NavLink[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/chat", label: "Chat General", icon: MessageCircle },
   { href: "/hoy", label: "HOY", icon: CalendarDays },
   { href: "/oportunidades", label: "Oportunidades", icon: Target },
   { href: "/clientes", label: "Clientes", icon: Users },
