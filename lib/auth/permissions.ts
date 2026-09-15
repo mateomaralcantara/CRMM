@@ -13,8 +13,8 @@ export function isPrivileged(role: AppRole) {
   return role === "super_admin" || role === "admin";
 }
 
-export function canAccessDashboard(_role: AppRole) {
-  return true;
+export function canAccessDashboard(role: AppRole) {
+  return Boolean(role);
 }
 
 export function canManageUsers(role: AppRole) {
