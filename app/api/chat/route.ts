@@ -44,16 +44,20 @@ function normalizeMessages(value: unknown): ChatMessage[] {
 
   return value
     .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
-    .map((item) => ({
-      role: item.role === "assistant" ? "assistant" : "user",
-      content: typeof item.content === "string" ? item.content.trim() : "",
-    }))
+    .map(
+      (item): ChatMessage => ({
+        role: item.role === "assistant" ? "assistant" : "user",
+        content: typeof item.content === "string" ? item.content.trim() : "",
+      })
+    )
     .filter((item) => item.content.length > 0)
     .slice(-MAX_MESSAGES)
-    .map((item) => ({
-      ...item,
-      content: item.content.slice(0, MAX_MESSAGE_CHARS),
-    }));
+    .map(
+      (item): ChatMessage => ({
+        ...item,
+        content: item.content.slice(0, MAX_MESSAGE_CHARS),
+      })
+    );
 }
 
 export async function POST(request: Request) {
