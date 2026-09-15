@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, RefreshCw, Save, ShieldCheck } from "lucide-react";
+import { Crown, Loader2, RefreshCw, Save, ShieldCheck } from "lucide-react";
 
 type Profile = {
   id: string;
@@ -27,8 +27,11 @@ const roles = [
 
 const statuses = [
   { value: "activo", label: "Activo" },
+  { value: "active", label: "Activo (legacy)" },
   { value: "inactivo", label: "Inactivo" },
+  { value: "inactive", label: "Inactivo (legacy)" },
   { value: "suspendido", label: "Suspendido" },
+  { value: "suspended", label: "Suspendido (legacy)" },
 ];
 
 export function UserRoleAdmin({ currentRole }: { currentRole: string }) {
@@ -36,10 +39,14 @@ export function UserRoleAdmin({ currentRole }: { currentRole: string }) {
   const [rows, setRows] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const superAdmin = currentRole === "super_admin";
+  const hasSuperAdmin = rows.some(
+    (row) => row.role === "super_admin" && ["activo", "active"].includes(row.status)
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,6 +74,34 @@ export function UserRoleAdmin({ currentRole }: { currentRole: string }) {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  async function bootstrapSuperAdmin() {
+    if (currentRole !== "admin" || hasSuperAdmin) return;
+
+    if (
+      !window.confirm(
+        "Esta acción convertirá TU cuenta Admin en el primer Super Admin. ¿Continuar?"
+      )
+    ) {
+      return;
+    }
+
+    setBootstrapping(true);
+    setError(null);
+    try {
+      const { error: rpcError } = await supabase.rpc("bootstrap_super_admin");
+      if (rpcError) {
+        setError(rpcError.message);
+        return;
+      }
+
+      window.location.reload();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBootstrapping(false);
+    }
+  }
 
   async function save(profile: Profile) {
     const privilegedTarget = ["super_admin", "admin"].includes(profile.role);
@@ -121,6 +156,28 @@ export function UserRoleAdmin({ currentRole }: { currentRole: string }) {
           </button>
         </div>
       </section>
+
+      {currentRole === "admin" && !hasSuperAdmin && !loading ? (
+        <section className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-5">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <p className="text-sm font-black text-amber-100">Aún no existe un Super Admin activo</p>
+              <p className="mt-1 max-w-2xl text-xs leading-5 text-amber-100/70">
+                Por seguridad, el primer Super Admin solo puede ser creado mediante el bootstrap protegido de base de datos. Convierte tu cuenta actual y luego podrás administrar otros roles privilegiados.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void bootstrapSuperAdmin()}
+              disabled={bootstrapping}
+              className="crm-button-primary"
+            >
+              {bootstrapping ? <Loader2 size={16} className="animate-spin" /> : <Crown size={16} />}
+              Crear primer Super Admin
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-3">
         <article className="crm-card p-5"><p className="text-xs font-black uppercase text-slate-500">Usuarios visibles</p><p className="mt-3 text-3xl font-black text-white">{rows.length}</p></article>
