@@ -7,89 +7,60 @@ import {
   CheckCircle2,
   CircleDollarSign,
   FileSignature,
-  Flame,
   Target,
   TrendingUp,
   Users,
   WalletCards,
-  Zap
+  Zap,
 } from "lucide-react";
 
 type Row = Record<string, unknown>;
 
-const unitLabels: Record<string, string> = {
-  migrapro: "MigraPro",
-  tributario: "Tributario",
-  genelibros: "GeneLibros",
-  libroseller: "LibroSeller",
-  b2b: "Marketing / B2B",
-  ia_capacitaciones: "IA / Capacitaciones"
-};
-
 const pipelineStages = [
-  "nuevo","contactado","respondio","calificado","consulta","propuesta",
-  "negociacion","pago_pendiente","ganado","en_ejecucion","finalizado","referido_upsell"
-];
+  "nuevo",
+  "contactado",
+  "respondio",
+  "calificado",
+  "consulta",
+  "propuesta",
+  "negociacion",
+  "pago_pendiente",
+  "ganado",
+  "en_ejecucion",
+  "finalizado",
+  "referido_upsell",
+] as const;
+
+function s(value: unknown) {
+  return String(value || "").trim();
+}
 
 function n(value: unknown) {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function s(value: unknown) {
-  return String(value || "").trim();
-}
-
 function money(value: number) {
   return new Intl.NumberFormat("es-DO", {
     style: "currency",
     currency: "DOP",
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(value);
 }
 
 function pretty(value: string) {
-  return value.replaceAll("_", " ").replace(/\b\w/g, (m) => m.toUpperCase());
-}
-
-function dateKey(input: string | Date) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Santo_Domingo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(new Date(input));
-
-  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-  return `${map.year}-${map.month}-${map.day}`;
-}
-
-function formatDate(value: unknown) {
-  if (!value) return "Sin fecha";
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return "Sin fecha";
-
-  return new Intl.DateTimeFormat("es-DO", {
-    timeZone: "America/Santo_Domingo",
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(date);
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function titleOf(row: Row) {
-  return s(row.title || row.name || row.subject || row.email || row.code || "Registro");
-}
-
-function openPipeline(row: Row) {
-  const stage = s(row.stage || row.status).toLowerCase();
-  return !["finalizado","referido_upsell","perdido","cancelado","cancelada"].includes(stage);
+  return s(row.title || row.name || row.email || "Registro");
 }
 
 function Metric({
   label,
   value,
   detail,
-  icon: Icon
+  icon: Icon,
 }: {
   label: string;
   value: string;
@@ -115,74 +86,77 @@ function Metric({
 export async function Reto111Dashboard() {
   const supabase = await createClient();
 
-  const [leadsR, opportunitiesR, quotesR, salesR, paymentsR] = await Promise.all([
-    supabase.from("leads").select("*").limit(1000),
-    supabase.from("opportunities").select("*").limit(1000),
-    supabase.from("quotes").select("*").limit(1000),
-    supabase.from("sales").select("*").limit(1000),
-    supabase.from("payments").select("*").limit(2000)
+  const settled = await Promise.allSettled([
+    supabase
+      .from("leads")
+      .select("id,name,email,business_unit,status,opportunity_value,next_action,next_action_at,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+    supabase
+      .from("opportunities")
+      .select("id,title,business_unit,stage,opportunity_value,sold_amount,collected_amount,outstanding_balance,next_action,next_action_at,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+    supabase
+      .from("quotes")
+      .select("id,title,business_unit,total,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+    supabase
+      .from("sales")
+      .select("id,title,business_unit,amount,collected_amount,outstanding_balance,status,payment_status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+    supabase
+      .from("payments")
+      .select("id,sale_id,amount,status,paid_at,created_at")
+      .order("created_at", { ascending: false })
+      .limit(500),
   ]);
 
-  const leads = (leadsR.data || []) as Row[];
-  const opportunities = (opportunitiesR.data || []) as Row[];
-  const quotes = (quotesR.data || []) as Row[];
-  const sales = (salesR.data || []) as Row[];
-  const payments = (paymentsR.data || []) as Row[];
+  const rowsAt = (index: number): Row[] => {
+    const result = settled[index];
+    if (!result || result.status === "rejected" || result.value.error) return [];
+    return (result.value.data || []) as unknown as Row[];
+  };
+
+  const leads = rowsAt(0);
+  const opportunities = rowsAt(1);
+  const quotes = rowsAt(2);
+  const sales = rowsAt(3);
+  const payments = rowsAt(4);
+
+  const hasPartialFailure = settled.some(
+    (result) => result.status === "rejected" || Boolean(result.value.error)
+  );
+
+  const validPayments = payments.filter((payment) =>
+    ["parcial", "completado"].includes(s(payment.status).toLowerCase())
+  );
 
   const now = new Date();
-  const today = dateKey(now);
-  const currentMonth = today.slice(0, 7);
-  const todayStart = new Date(`${today}T00:00:00-04:00`);
-  const weekday = todayStart.getDay();
-  const mondayOffset = weekday === 0 ? 6 : weekday - 1;
-  const weekStart = new Date(todayStart);
-  weekStart.setDate(weekStart.getDate() - mondayOffset);
+  const today = now.toISOString().slice(0, 10);
+  const month = today.slice(0, 7);
 
-  const validPayments = payments.filter((p) =>
-    ["parcial", "completado"].includes(s(p.status).toLowerCase())
-  );
-  const paymentDate = (p: Row) => s(p.paid_at || p.created_at);
+  const paymentDate = (payment: Row) => s(payment.paid_at || payment.created_at);
 
   const cashToday = validPayments
-    .filter((p) => paymentDate(p) && dateKey(paymentDate(p)) === today)
-    .reduce((sum, p) => sum + n(p.amount), 0);
-
-  const cashWeek = validPayments
-    .filter((p) => {
-      const raw = paymentDate(p);
-      if (!raw) return false;
-      const d = new Date(raw);
-      return d >= weekStart && d <= now;
-    })
-    .reduce((sum, p) => sum + n(p.amount), 0);
+    .filter((payment) => paymentDate(payment).slice(0, 10) === today)
+    .reduce((sum, payment) => sum + n(payment.amount), 0);
 
   const cashMonth = validPayments
-    .filter((p) => paymentDate(p) && dateKey(paymentDate(p)).startsWith(currentMonth))
-    .reduce((sum, p) => sum + n(p.amount), 0);
+    .filter((payment) => paymentDate(payment).startsWith(month))
+    .reduce((sum, payment) => sum + n(payment.amount), 0);
 
-  const collectedBySale = new Map<string, number>();
-  validPayments.forEach((p) => {
-    const id = s(p.sale_id);
-    if (!id) return;
-    collectedBySale.set(id, (collectedBySale.get(id) || 0) + n(p.amount));
-  });
-
-  const receivable = sales.reduce((sum, sale) => {
-    if (sale.outstanding_balance !== undefined && sale.outstanding_balance !== null) {
-      return sum + n(sale.outstanding_balance);
-    }
-    return sum + Math.max(n(sale.amount) - (collectedBySale.get(s(sale.id)) || 0), 0);
-  }, 0);
-
-  const openQuotes = quotes.filter((q) =>
-    ["borrador", "enviada"].includes(s(q.status).toLowerCase())
+  const receivable = sales.reduce(
+    (sum, sale) => sum + Math.max(n(sale.outstanding_balance), 0),
+    0
   );
 
-  const pipelineRows = opportunities.length > 0 ? opportunities : leads;
-
-  const wonCount = pipelineRows.filter((r) =>
-    ["ganado","en_ejecucion","finalizado","referido_upsell"].includes(
-      s(r.stage || r.status).toLowerCase()
+  const pipelineRows = opportunities.length ? opportunities : leads;
+  const wonCount = pipelineRows.filter((row) =>
+    ["ganado", "en_ejecucion", "finalizado", "referido_upsell"].includes(
+      s(row.stage || row.status).toLowerCase()
     )
   ).length;
 
@@ -191,123 +165,91 @@ export async function Reto111Dashboard() {
     : 0;
 
   const followUps = pipelineRows
-    .filter(openPipeline)
     .filter((row) => {
-      const raw = s(row.next_action_at || row.next_follow_up);
+      const stage = s(row.stage || row.status).toLowerCase();
+      if (["finalizado", "referido_upsell", "perdido"].includes(stage)) return false;
+      const raw = s(row.next_action_at);
       return raw && new Date(raw).getTime() <= now.getTime();
     })
-    .sort((a, b) =>
-      new Date(s(a.next_action_at || a.next_follow_up)).getTime() -
-      new Date(s(b.next_action_at || b.next_follow_up)).getTime()
-    );
+    .sort(
+      (a, b) =>
+        new Date(s(a.next_action_at)).getTime() - new Date(s(b.next_action_at)).getTime()
+    )
+    .slice(0, 6);
+
+  const openQuotes = quotes
+    .filter((quote) => ["borrador", "enviada"].includes(s(quote.status).toLowerCase()))
+    .slice(0, 4);
+
+  const collectionTasks = sales
+    .filter((sale) => n(sale.outstanding_balance) > 0)
+    .sort((a, b) => n(b.outstanding_balance) - n(a.outstanding_balance))
+    .slice(0, 4);
 
   const pipelineCounts = Object.fromEntries(
     pipelineStages.map((stage) => [
       stage,
-      pipelineRows.filter((r) => s(r.stage || r.status).toLowerCase() === stage).length
+      pipelineRows.filter((row) => s(row.stage || row.status).toLowerCase() === stage).length,
     ])
   ) as Record<string, number>;
 
-  const unitStats = Object.keys(unitLabels).map((unit) => {
-    const unitLeads = leads.filter((r) => s(r.business_unit) === unit).length;
-    const unitSales = sales.filter((r) => s(r.business_unit) === unit);
-    const sold = unitSales.reduce((sum, r) => sum + n(r.amount), 0);
-    const saleIds = new Set(unitSales.map((r) => s(r.id)).filter(Boolean));
-    const collected = validPayments
-      .filter((p) => saleIds.has(s(p.sale_id)))
-      .reduce((sum, p) => sum + n(p.amount), 0);
-
-    return { unit, leads: unitLeads, sold, collected };
-  });
-
-  const collectionTasks = sales
-    .filter((sale) => {
-      const bal = sale.outstanding_balance !== undefined && sale.outstanding_balance !== null
-        ? n(sale.outstanding_balance)
-        : Math.max(n(sale.amount) - (collectedBySale.get(s(sale.id)) || 0), 0);
-      return bal > 0;
-    })
-    .map((sale) => ({
+  const todayTasks = [
+    ...followUps.map((row) => ({
+      type: "Seguimiento",
+      title: titleOf(row),
+      detail: s(row.next_action) || "Dar seguimiento",
+      href: opportunities.length ? "/oportunidades" : "/leads",
+      weight: 3,
+    })),
+    ...collectionTasks.map((sale) => ({
       type: "Cobro",
       title: titleOf(sale),
-      detail: `Saldo ${money(
-        sale.outstanding_balance !== undefined && sale.outstanding_balance !== null
-          ? n(sale.outstanding_balance)
-          : Math.max(n(sale.amount) - (collectedBySale.get(s(sale.id)) || 0), 0)
-      )}`,
+      detail: `Saldo ${money(n(sale.outstanding_balance))}`,
       href: "/ventas",
-      weight: 2
-    }));
-
-  const proposalTasks = openQuotes.map((quote) => ({
-    type: "Propuesta",
-    title: titleOf(quote),
-    detail: `${money(n(quote.total))} · ${pretty(s(quote.status))}`,
-    href: "/cotizaciones",
-    weight: 3
-  }));
-
-  const followUpTasks = followUps.map((row) => ({
-    type: "Seguimiento",
-    title: titleOf(row),
-    detail: `${s(row.next_action) || "Dar seguimiento"} · ${formatDate(row.next_action_at || row.next_follow_up)}`,
-    href: opportunities.length > 0 ? "/oportunidades" : "/leads",
-    weight: 4
-  }));
-
-  const todayTasks = [...followUpTasks, ...collectionTasks, ...proposalTasks]
+      weight: 2,
+    })),
+    ...openQuotes.map((quote) => ({
+      type: "Propuesta",
+      title: titleOf(quote),
+      detail: `${money(n(quote.total))} · ${pretty(s(quote.status))}`,
+      href: "/cotizaciones",
+      weight: 1,
+    })),
+  ]
     .sort((a, b) => b.weight - a.weight)
     .slice(0, 7);
 
   return (
     <>
-      <section className="crm-hero p-6 lg:p-8">
-        <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div className="max-w-3xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-500/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
-              <span className="crm-status-dot" />
-              Reto 111 · Centro comercial
-            </div>
-            <h1 className="crm-gradient-title text-4xl font-black tracking-tight lg:text-5xl">
-              Dinero, seguimiento y ejecución.
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
-              La capa comercial prioriza leads, oportunidades, propuestas, cobros,
-              próximas acciones y conversión.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Link href="/hoy" className="crm-button-primary">
-              <Flame size={17} />
-              Abrir HOY
-            </Link>
-            <Link href="/oportunidades" className="crm-button-secondary">
-              <Target size={17} />
-              Pipeline
-            </Link>
-          </div>
+      {hasPartialFailure ? (
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+          Parte de los datos no respondió. El CRM cargó el resto de la información disponible.
         </div>
-      </section>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Metric label="Cobrado hoy" value={money(cashToday)} detail="Pagos registrados hoy." icon={Banknote} />
-        <Metric label="Cobrado semana" value={money(cashWeek)} detail="Caja desde el lunes." icon={TrendingUp} />
         <Metric label="Cobrado mes" value={money(cashMonth)} detail="Ingresos cobrados este mes." icon={CircleDollarSign} />
         <Metric label="Por cobrar" value={money(receivable)} detail="Saldo pendiente de ventas." icon={WalletCards} />
+        <Metric label="Conversión" value={`${conversion}%`} detail={`${wonCount} oportunidades ganadas o avanzadas.`} icon={CheckCircle2} />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Leads" value={String(leads.length)} detail="Prospectos registrados." icon={Users} />
+        <Metric label="Leads" value={String(leads.length)} detail="Últimos prospectos operativos." icon={Users} />
         <Metric label="Seguimientos" value={String(followUps.length)} detail="Acciones vencidas o para ahora." icon={CalendarClock} />
-        <Metric label="Propuestas abiertas" value={String(openQuotes.length)} detail="Borradores y propuestas enviadas." icon={FileSignature} />
-        <Metric label="Conversión" value={`${conversion}%`} detail={`${wonCount} oportunidades ganadas/avanzadas.`} icon={CheckCircle2} />
+        <Metric label="Propuestas" value={String(openQuotes.length)} detail="Borradores y propuestas enviadas." icon={FileSignature} />
+        <Metric label="Pipeline" value={String(pipelineRows.length)} detail="Oportunidades activas cargadas." icon={Target} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="crm-card p-6">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-300">Pipeline</p>
-          <h2 className="mt-2 text-2xl font-black text-white">Dónde está el dinero</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-300">Pipeline</p>
+              <h2 className="mt-2 text-2xl font-black text-white">Dónde está el dinero</h2>
+            </div>
+            <TrendingUp className="text-indigo-300" size={22} />
+          </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {pipelineStages.map((stage) => (
@@ -331,7 +273,7 @@ export async function Reto111Dashboard() {
             ) : (
               todayTasks.map((item, index) => (
                 <Link
-                  key={`${item.type}-${index}-${item.title}`}
+                  key={`${item.type}-${item.title}-${index}`}
                   href={item.href}
                   className="group flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 hover:bg-white/[0.05]"
                 >
@@ -352,39 +294,6 @@ export async function Reto111Dashboard() {
           </Link>
         </div>
       </section>
-
-      <section className="crm-card p-6">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Seis motores</p>
-        <h2 className="mt-2 text-2xl font-black text-white">Unidades de negocio</h2>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {unitStats.map((item) => (
-            <div key={item.unit} className="rounded-3xl border border-white/10 bg-slate-950/35 p-5">
-              <p className="font-black text-white">{unitLabels[item.unit]}</p>
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <div>
-                  <p className="text-[11px] uppercase text-slate-500">Leads</p>
-                  <p className="mt-1 text-lg font-black text-white">{item.leads}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase text-slate-500">Vendido</p>
-                  <p className="mt-1 text-sm font-black text-indigo-200">{money(item.sold)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase text-slate-500">Cobrado</p>
-                  <p className="mt-1 text-sm font-black text-emerald-200">{money(item.collected)}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {opportunitiesR.error ? (
-        <section className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-5 text-sm text-amber-100">
-          <strong>Falta activar Supabase:</strong> ejecuta <code>supabase/reto-111-specialization.sql</code>.
-        </section>
-      ) : null}
     </>
   );
 }

@@ -1,17 +1,9 @@
-// components/app-shell.tsx
-// ✅ Este componente NO debe renderizar Sidebar.
-// Solo organiza Topbar + contenido.
-
 import { redirect } from "next/navigation";
 import { Topbar } from "@/components/topbar";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
@@ -22,9 +14,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <Topbar email={user.email} />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[1600px] p-5 lg:p-8">
-          {children}
-        </div>
+        <div className="mx-auto max-w-[1600px] p-5 lg:p-8">{children}</div>
       </div>
     </div>
   );

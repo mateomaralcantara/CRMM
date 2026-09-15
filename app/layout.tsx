@@ -1,32 +1,16 @@
-// app/layout.tsx
-// ✅ ÚNICO lugar donde debe renderizarse el Sidebar.
-
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth/current-user";
 
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  let profile: { role: string | null; status: string | null } | null = null;
-
-  if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("role, status")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    profile = data;
-  }
+  const [user, profile] = await Promise.all([
+    getCurrentUser(),
+    getCurrentProfile(),
+  ]);
 
   const isActiveUser =
     user && ["activo", "active"].includes(String(profile?.status));
