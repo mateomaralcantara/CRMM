@@ -14,8 +14,7 @@ alter table public.sales
   add column if not exists affiliate_id uuid references public.affiliates(id) on delete set null,
   add column if not exists responsible_id uuid references public.profiles(id) on delete set null,
   add column if not exists business_unit text,
-  add column if not exists collected_amount numeric(12,2) not null default 0,
-  add column if not exists opportunity_id uuid;
+  add column if not exists collected_amount numeric(12,2) not null default 0;
 
 alter table public.clients
   add column if not exists affiliate_id uuid references public.affiliates(id) on delete set null,
