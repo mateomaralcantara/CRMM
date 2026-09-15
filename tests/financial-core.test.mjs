@@ -9,8 +9,11 @@ const exists = (rel) => fs.existsSync(path.join(root, rel));
 
 test("Financial Core V1 files are versioned", () => {
   [
+    "supabase/financial-core-v1-preflight.sql",
     "supabase/financial-core-v1.sql",
     "supabase/financial-core-v1-hardening.sql",
+    "supabase/financial-core-v1-integrity.sql",
+    "supabase/financial-core-v1-security-final.sql",
     "app/finanzas/page.tsx",
     "components/financial-dashboard.tsx",
     "components/commission-ledger.tsx",
@@ -33,11 +36,13 @@ test("payments snapshot responsible affiliate and business unit", () => {
 });
 
 test("commissions are recalculated from collected cash", () => {
-  const sql = read("supabase/financial-core-v1.sql");
-  assert.match(sql, /recalculate_sale_commissions/);
-  assert.match(sql, /basis_amount/);
-  assert.match(sql, /payment_id/);
-  assert.match(sql, /get_sale_commission_rate/);
+  const core = read("supabase/financial-core-v1.sql");
+  const integrity = read("supabase/financial-core-v1-integrity.sql");
+  assert.match(core, /recalculate_sale_commissions/);
+  assert.match(core, /basis_amount/);
+  assert.match(core, /payment_id/);
+  assert.match(integrity, /get_sale_commission_rate/);
+  assert.match(integrity, /commission_rate/);
 });
 
 test("only admin and super_admin are globally privileged", () => {
@@ -52,12 +57,38 @@ test("opportunities are no longer globally readable", () => {
   assert.doesNotMatch(sql, /opportunities_select_scoped[\s\S]{0,180}using \(true\)/i);
 });
 
-test("normal users cannot mutate posted cash or commissions globally", () => {
-  const sql = read("supabase/financial-core-v1-hardening.sql");
-  assert.match(sql, /payments_update_privileged/);
-  assert.match(sql, /payments_delete_privileged/);
-  assert.match(sql, /commissions_delete_super_admin/);
-  assert.match(sql, /has_role\(array\['supervisor','responsable','vendedor'\]\)/);
+test("cash mutations are restricted and physical payment delete is forbidden", () => {
+  const hardening = read("supabase/financial-core-v1-hardening.sql");
+  const integrity = read("supabase/financial-core-v1-integrity.sql");
+
+  assert.match(hardening, /payments_update_privileged/);
+  assert.match(hardening, /has_role\(array\['supervisor','responsable','vendedor'\]\)/);
+  assert.match(integrity, /prevent_payment_physical_delete/);
+  assert.match(integrity, /Los pagos no se eliminan/);
+});
+
+test("financial attribution cannot be rewritten by normal users", () => {
+  const sql = read("supabase/financial-core-v1-security-final.sql");
+  assert.match(sql, /protect_affiliate_financial_assignment/);
+  assert.match(sql, /enforce_sale_financial_attribution/);
+  assert.match(sql, /Solo Admin\/Super Admin puede reasignar responsable o afiliado/);
+  assert.match(sql, /commission_rate between 0 and 100/);
+});
+
+test("first super admin has a protected bootstrap path", () => {
+  const sql = read("supabase/financial-core-v1-integrity.sql");
+  const users = read("components/user-role-admin.tsx");
+
+  assert.match(sql, /bootstrap_super_admin/);
+  assert.match(sql, /Ya existe un Super Admin activo/);
+  assert.match(users, /bootstrap_super_admin/);
+  assert.match(users, /Crear primer Super Admin/);
+});
+
+test("financial views keep invoker security", () => {
+  const sql = read("supabase/financial-core-v1.sql");
+  assert.match(sql, /financial_transactions_view[\s\S]*security_invoker\s*=\s*true/i);
+  assert.match(sql, /commission_financial_view[\s\S]*security_invoker\s*=\s*true/i);
 });
 
 test("financial UI is role-aware", () => {
@@ -75,4 +106,10 @@ test("reports use the financial dashboard instead of won sales as income", () =>
   const reports = read("app/reportes/page.tsx");
   assert.match(reports, /FinancialDashboard/);
   assert.doesNotMatch(reports, /sumSalesByStatus/);
+});
+
+test("preflight requires the commercial opportunities layer", () => {
+  const sql = read("supabase/financial-core-v1-preflight.sql");
+  assert.match(sql, /Financial Core requires public\.opportunities/);
+  assert.match(sql, /add column if not exists commission_rate/);
 });
