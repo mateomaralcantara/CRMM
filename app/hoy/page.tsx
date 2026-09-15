@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { createClient } from "@/lib/supabase/server";
 import {
   ArrowRight,
   Banknote,
@@ -9,42 +10,49 @@ import {
   Flame,
   PhoneCall,
   Target,
-  UserCheck
+  UserCheck,
 } from "lucide-react";
 
 type Row = Record<string, unknown>;
 
-function s(value: unknown) { return String(value || "").trim(); }
+function s(value: unknown) {
+  return String(value || "").trim();
+}
+
 function n(value: unknown) {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
+
 function money(value: number) {
   return new Intl.NumberFormat("es-DO", {
     style: "currency",
     currency: "DOP",
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(value);
 }
+
 function titleOf(row: Row) {
-  return s(row.title || row.name || row.subject || row.email || row.code || "Registro");
+  return s(row.title || row.name || row.email || "Registro");
 }
+
 function formatDate(value: unknown) {
   if (!value) return "Sin fecha";
-  const d = new Date(String(value));
-  if (Number.isNaN(d.getTime())) return "Sin fecha";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+
   return new Intl.DateTimeFormat("es-DO", {
     timeZone: "America/Santo_Domingo",
     dateStyle: "medium",
-    timeStyle: "short"
-  }).format(d);
+    timeStyle: "short",
+  }).format(date);
 }
 
 function Section({
   title,
   subtitle,
   icon: Icon,
-  children
+  children,
 }: {
   title: string;
   subtitle: string;
@@ -62,87 +70,23 @@ function Section({
           <p className="text-xs text-slate-500">{subtitle}</p>
         </div>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="space-y-3 p-5">{children}</div>
     </section>
   );
 }
 
-export default async function TodayPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const [leadsR, oppsR, salesR, paymentsR, quotesR, requestsR] = await Promise.all([
-    supabase.from("leads").select("*").limit(1000),
-    supabase.from("opportunities").select("*").limit(1000),
-    supabase.from("sales").select("*").limit(1000),
-    supabase.from("payments").select("*").limit(2000),
-    supabase.from("quotes").select("*").limit(1000),
-    supabase.from("service_requests").select("*").limit(1000)
-  ]);
-
-  const leads = (leadsR.data || []) as Row[];
-  const opps = (oppsR.data || []) as Row[];
-  const sales = (salesR.data || []) as Row[];
-  const payments = (paymentsR.data || []) as Row[];
-  const quotes = (quotesR.data || []) as Row[];
-  const requests = (requestsR.data || []) as Row[];
-  // Server Component: necesitamos la hora actual para calcular seguimientos vencidos.
-  const now = Date.now();
-
-  const pipeline = opps.length ? opps : leads;
-  const followups = pipeline
-    .filter((r) => {
-      const stage = s(r.stage || r.status).toLowerCase();
-      if (["finalizado","referido_upsell","perdido"].includes(stage)) return false;
-      const raw = s(r.next_action_at || r.next_follow_up);
-      return raw && new Date(raw).getTime() <= now;
-    })
-    .sort((a, b) =>
-      new Date(s(a.next_action_at || a.next_follow_up)).getTime() -
-      new Date(s(b.next_action_at || b.next_follow_up)).getTime()
-    );
-
-  const collected = new Map<string, number>();
-  payments
-    .filter((p) => ["parcial","completado"].includes(s(p.status).toLowerCase()))
-    .forEach((p) => {
-      const saleId = s(p.sale_id);
-      if (saleId) collected.set(saleId, (collected.get(saleId) || 0) + n(p.amount));
-    });
-
-  const collections = sales
-    .map((sale) => {
-      const balance = sale.outstanding_balance !== undefined && sale.outstanding_balance !== null
-        ? n(sale.outstanding_balance)
-        : Math.max(n(sale.amount) - (collected.get(s(sale.id)) || 0), 0);
-      return { sale, balance };
-    })
-    .filter((x) => x.balance > 0)
-    .sort((a, b) => b.balance - a.balance);
-
-  const proposals = quotes.filter((q) =>
-    ["borrador","enviada"].includes(s(q.status).toLowerCase())
-  );
-
-  const service = requests
-    .filter((r) => !["completado","cancelado"].includes(s(r.status).toLowerCase()))
-    .sort((a, b) => {
-      const score = (r: Row) => s(r.priority) === "urgente" ? 4 : s(r.priority) === "alta" ? 3 : 1;
-      return score(b) - score(a);
-    });
-
-  const RowLink = ({
-    href,
-    eyebrow,
-    title,
-    detail
-  }: {
-    href: string;
-    eyebrow: string;
-    title: string;
-    detail: string;
-  }) => (
+function RowLink({
+  href,
+  eyebrow,
+  title,
+  detail,
+}: {
+  href: string;
+  eyebrow: string;
+  title: string;
+  detail: string;
+}) {
+  return (
     <Link
       href={href}
       className="group flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 hover:bg-white/[0.05]"
@@ -155,10 +99,113 @@ export default async function TodayPage() {
       <ArrowRight size={16} className="shrink-0 text-slate-600 group-hover:text-white" />
     </Link>
   );
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+      {children}
+    </div>
+  );
+}
+
+export default async function TodayPage() {
+  const [supabase, user] = await Promise.all([createClient(), getCurrentUser()]);
+  if (!user) redirect("/login");
+
+  const settled = await Promise.allSettled([
+    supabase
+      .from("leads")
+      .select("id,name,email,status,next_action,next_action_at,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+    supabase
+      .from("opportunities")
+      .select("id,title,stage,next_action,next_action_at,opportunity_value,outstanding_balance,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+    supabase
+      .from("sales")
+      .select("id,title,amount,outstanding_balance,status,payment_status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+    supabase
+      .from("quotes")
+      .select("id,title,total,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+    supabase
+      .from("service_requests")
+      .select("id,title,status,priority,created_at")
+      .order("created_at", { ascending: false })
+      .limit(250),
+  ]);
+
+  const rowsAt = (index: number): Row[] => {
+    const result = settled[index];
+    if (!result || result.status === "rejected" || result.value.error) return [];
+    return (result.value.data || []) as unknown as Row[];
+  };
+
+  const leads = rowsAt(0);
+  const opportunities = rowsAt(1);
+  const sales = rowsAt(2);
+  const quotes = rowsAt(3);
+  const requests = rowsAt(4);
+
+  const hasPartialFailure = settled.some(
+    (result) => result.status === "rejected" || Boolean(result.value.error)
+  );
+
+  const now = Date.now();
+  const pipeline = opportunities.length ? opportunities : leads;
+
+  const followups = pipeline
+    .filter((row) => {
+      const stage = s(row.stage || row.status).toLowerCase();
+      if (["finalizado", "referido_upsell", "perdido"].includes(stage)) return false;
+      const raw = s(row.next_action_at);
+      return raw && new Date(raw).getTime() <= now;
+    })
+    .sort(
+      (a, b) =>
+        new Date(s(a.next_action_at)).getTime() - new Date(s(b.next_action_at)).getTime()
+    )
+    .slice(0, 10);
+
+  const collections = sales
+    .map((sale) => ({ sale, balance: Math.max(n(sale.outstanding_balance), 0) }))
+    .filter((item) => item.balance > 0)
+    .sort((a, b) => b.balance - a.balance)
+    .slice(0, 10);
+
+  const proposals = quotes
+    .filter((quote) => ["borrador", "enviada"].includes(s(quote.status).toLowerCase()))
+    .slice(0, 10);
+
+  const service = requests
+    .filter((request) => !["completado", "cancelado"].includes(s(request.status).toLowerCase()))
+    .sort((a, b) => {
+      const score = (row: Row) => {
+        const priority = s(row.priority).toLowerCase();
+        if (priority === "urgente") return 4;
+        if (priority === "alta") return 3;
+        if (priority === "media") return 2;
+        return 1;
+      };
+      return score(b) - score(a);
+    })
+    .slice(0, 10);
 
   return (
     <AppShell>
       <div className="space-y-6">
+        {hasPartialFailure ? (
+          <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+            Parte de la información no respondió. El CRM cargó el resto de los datos disponibles; puedes actualizar para completar la vista.
+          </div>
+        ) : null}
+
         <section className="crm-hero p-6">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
             <div>
@@ -168,7 +215,7 @@ export default async function TodayPage() {
               </div>
               <h1 className="crm-gradient-title text-4xl font-black">Agenda comercial de hoy</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-                A quién llamar, cobrar, seguir y atender. Sin perder tiempo buscando.
+                A quién llamar, cobrar, seguir y atender. La vista prioriza lo urgente sin descargar miles de registros.
               </p>
             </div>
             <Link href="/oportunidades" className="crm-button-primary">
@@ -179,68 +226,70 @@ export default async function TodayPage() {
         </section>
 
         <div className="grid gap-6 xl:grid-cols-2">
-          <Section title={`Seguimientos (${followups.length})`} subtitle="Acciones vencidas o para ahora." icon={PhoneCall}>
-            <div className="space-y-3">
-              {followups.length ? followups.slice(0, 20).map((row, i) => (
+          <Section title="Seguimientos" subtitle={`${followups.length} acciones vencidas o para ahora`} icon={PhoneCall}>
+            {followups.length ? (
+              followups.map((row) => (
                 <RowLink
-                  key={`${s(row.id)}-${i}`}
-                  href={opps.length ? "/oportunidades" : "/leads"}
-                  eyebrow={s(row.business_unit) || "seguimiento"}
+                  key={s(row.id)}
+                  href={opportunities.length ? "/oportunidades" : "/leads"}
+                  eyebrow="Seguimiento"
                   title={titleOf(row)}
-                  detail={`${s(row.next_action) || "Dar seguimiento"} · ${formatDate(row.next_action_at || row.next_follow_up)}`}
+                  detail={`${s(row.next_action) || "Dar seguimiento"} · ${formatDate(row.next_action_at)}`}
                 />
-              )) : <p className="text-sm text-slate-500">No hay seguimientos vencidos.</p>}
-            </div>
+              ))
+            ) : (
+              <Empty>No hay seguimientos vencidos.</Empty>
+            )}
           </Section>
 
-          <Section title={`Cobros (${collections.length})`} subtitle="Ventas con dinero pendiente de entrar." icon={Banknote}>
-            <div className="space-y-3">
-              {collections.length ? collections.slice(0, 20).map(({ sale, balance }, i) => (
+          <Section title="Cobros" subtitle={`${collections.length} ventas con saldo pendiente`} icon={Banknote}>
+            {collections.length ? (
+              collections.map(({ sale, balance }) => (
                 <RowLink
-                  key={`${s(sale.id)}-${i}`}
+                  key={s(sale.id)}
                   href="/ventas"
-                  eyebrow="cobrar"
+                  eyebrow="Cobro"
                   title={titleOf(sale)}
                   detail={`Saldo pendiente ${money(balance)}`}
                 />
-              )) : <p className="text-sm text-slate-500">No hay saldos pendientes.</p>}
-            </div>
+              ))
+            ) : (
+              <Empty>No hay cobros pendientes detectados.</Empty>
+            )}
           </Section>
 
-          <Section title={`Propuestas (${proposals.length})`} subtitle="Cotizaciones que todavía requieren movimiento." icon={FileSignature}>
-            <div className="space-y-3">
-              {proposals.length ? proposals.slice(0, 20).map((quote, i) => (
+          <Section title="Propuestas" subtitle={`${proposals.length} propuestas abiertas`} icon={FileSignature}>
+            {proposals.length ? (
+              proposals.map((quote) => (
                 <RowLink
-                  key={`${s(quote.id)}-${i}`}
+                  key={s(quote.id)}
                   href="/cotizaciones"
-                  eyebrow={s(quote.status)}
+                  eyebrow="Propuesta"
                   title={titleOf(quote)}
-                  detail={`${money(n(quote.total))} · vence ${formatDate(quote.expires_at)}`}
+                  detail={`${money(n(quote.total))} · ${s(quote.status) || "sin estado"}`}
                 />
-              )) : <p className="text-sm text-slate-500">No hay propuestas abiertas.</p>}
-            </div>
+              ))
+            ) : (
+              <Empty>No hay propuestas pendientes.</Empty>
+            )}
           </Section>
 
-          <Section title={`Clientes por atender (${service.length})`} subtitle="Solicitudes abiertas priorizadas." icon={UserCheck}>
-            <div className="space-y-3">
-              {service.length ? service.slice(0, 20).map((row, i) => (
+          <Section title="Servicio" subtitle={`${service.length} solicitudes activas prioritarias`} icon={UserCheck}>
+            {service.length ? (
+              service.map((request) => (
                 <RowLink
-                  key={`${s(row.id)}-${i}`}
+                  key={s(request.id)}
                   href="/solicitudes"
-                  eyebrow={s(row.priority) || "cliente"}
-                  title={titleOf(row)}
-                  detail={`Estado: ${s(row.status).replaceAll("_", " ")}`}
+                  eyebrow={s(request.priority) || "Solicitud"}
+                  title={titleOf(request)}
+                  detail={s(request.status) || "sin estado"}
                 />
-              )) : <p className="text-sm text-slate-500">No hay solicitudes abiertas.</p>}
-            </div>
+              ))
+            ) : (
+              <Empty>No hay solicitudes activas prioritarias.</Empty>
+            )}
           </Section>
         </div>
-
-        {oppsR.error ? (
-          <div className="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-5 text-sm text-amber-100">
-            Ejecuta <code>supabase/reto-111-specialization.sql</code> para activar oportunidades.
-          </div>
-        ) : null}
       </div>
     </AppShell>
   );
