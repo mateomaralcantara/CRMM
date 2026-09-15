@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/app-shell";
-import { PaymentModule } from "@/components/payment-module";
+import { PaymentModuleFast } from "@/components/payment-module-fast";
 
 export default function Page() {
   return (
     <AppShell>
-      <PaymentModule />
+      <PaymentModuleFast />
     </AppShell>
   );
 }
