@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FinancialDashboard } from "@/components/financial-dashboard";
 import { Reto111Dashboard } from "@/components/reto111-dashboard";
 import { getCurrentProfile, getCurrentUser } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
@@ -56,6 +57,19 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const role = String(profile.role || "").toLowerCase();
+  const privileged = ["super_admin", "admin"].includes(role);
+
+  if (!privileged) {
+    return (
+      <main className="relative min-h-screen overflow-hidden px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+        <div className="mx-auto max-w-[1600px]">
+          <FinancialDashboard />
+        </div>
+      </main>
+    );
+  }
+
   const settled = await Promise.allSettled([
     supabase.from("clients").select("id", { count: "exact", head: true }),
     supabase.from("leads").select("id", { count: "exact", head: true }),
@@ -110,20 +124,20 @@ export default async function DashboardPage() {
             <div className="max-w-3xl">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-500/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
                 <span className="crm-status-dot" />
-                CRM operativo
+                Control global · {role === "super_admin" ? "Super Admin" : "Admin"}
               </div>
               <h1 className="crm-gradient-title text-4xl font-black tracking-tight lg:text-5xl">
                 Hola, {displayName}.
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
-                La portada ahora usa conteos directos y solo carga los registros necesarios para trabajar, reduciendo transferencia y tiempo de respuesta.
+                Esta vista global está reservada a admin y super_admin. Responsables, vendedores y afiliados reciben un dashboard privado filtrado por RLS.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Link href="/hoy" className="crm-button-primary">
+              <Link href="/finanzas" className="crm-button-primary">
                 <Zap size={17} />
-                Abrir HOY
+                Centro financiero
               </Link>
               <Link href="/oportunidades" className="crm-button-secondary">
                 <Target size={17} />
@@ -140,6 +154,8 @@ export default async function DashboardPage() {
           <StatCard title="Tickets" value={countAt(3)} description="Tickets registrados." icon={LifeBuoy} />
           <StatCard title="Usuarios activos" value={countAt(4)} description="Usuarios habilitados." icon={ShieldCheck} />
         </section>
+
+        <FinancialDashboard compact />
 
         <Reto111Dashboard />
 
@@ -194,7 +210,7 @@ export default async function DashboardPage() {
                 ["Oportunidades", "/oportunidades"],
                 ["Ventas", "/ventas"],
                 ["Pagos", "/pagos"],
-                ["Reportes", "/reportes"],
+                ["Finanzas", "/finanzas"],
               ].map(([label, href]) => (
                 <Link key={href} href={href} className="rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-sm font-black text-slate-200 hover:bg-white/[0.05]">
                   <span className="flex items-center justify-between gap-3">
@@ -207,7 +223,7 @@ export default async function DashboardPage() {
 
             <div className="mt-5 flex items-center gap-2 text-xs text-slate-500">
               <Sparkles size={14} className="text-indigo-300" />
-              Consultas compactas, navegación con fallback y recuperación automática de errores.
+              El ingreso real proviene de pagos contabilizados; las vistas privadas dependen de RLS.
             </div>
           </div>
         </section>
