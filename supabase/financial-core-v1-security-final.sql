@@ -32,8 +32,8 @@ before update on public.affiliates
 for each row execute function public.protect_affiliate_financial_assignment();
 
 -- Sale attribution inherits the affiliate from the client when possible.
--- Non-privileged commercial users are always the responsible of sales they create
--- and cannot later rewrite financial attribution.
+-- Non-privileged commercial users are always the responsible of sales they create.
+-- Once real money has entered, the financial basis of a sale is immutable for normal roles.
 create or replace function public.enforce_sale_financial_attribution()
 returns trigger
 language plpgsql
@@ -42,6 +42,7 @@ set search_path = public
 as $$
 declare
   v_client_affiliate uuid;
+  v_has_posted_payment boolean := false;
 begin
   if new.client_id is not null then
     select c.affiliate_id into v_client_affiliate
@@ -63,6 +64,22 @@ begin
     if new.responsible_id is distinct from old.responsible_id
        or new.affiliate_id is distinct from old.affiliate_id then
       raise exception 'Solo Admin/Super Admin puede reasignar responsable o afiliado de una venta';
+    end if;
+
+    select exists (
+      select 1
+      from public.payments p
+      where p.sale_id = old.id
+        and p.status in ('parcial','completado')
+    ) into v_has_posted_payment;
+
+    if v_has_posted_payment
+       and (
+         new.amount is distinct from old.amount
+         or new.client_id is distinct from old.client_id
+         or new.business_unit is distinct from old.business_unit
+       ) then
+      raise exception 'Una venta con cobros contabilizados solo puede ser corregida financieramente por Admin/Super Admin';
     end if;
   end if;
 
