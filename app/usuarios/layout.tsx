@@ -1,29 +1,23 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile, getCurrentUser } from "@/lib/auth/current-user";
 
 export default async function UsuariosLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  const [user, profile] = await Promise.all([
+    getCurrentUser(),
+    getCurrentProfile(),
+  ]);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  if (!user) {
-    redirect("/login");
-  }
+  const role = String(profile?.role || "").toLowerCase();
+  const active = ["activo", "active"].includes(String(profile?.status || ""));
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, status")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin" || profile?.status !== "activo") {
-    redirect("/dashboard");
+  if (!active || !["super_admin", "admin"].includes(role)) {
+    redirect("/");
   }
 
   return <>{children}</>;
